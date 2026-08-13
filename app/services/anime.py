@@ -1,8 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.clients.jikan import fetch_anime, to_anime_fields
-from app.clients.jikan import search_anime as jikan_search
+from app.clients.anime_source import fetch_anime, to_anime_fields
+from app.clients.anime_source import search_anime as anime_search
 from app.models.anime import Anime
 
 
@@ -34,5 +34,5 @@ async def import_anime(session: AsyncSession, jikan_id: int) -> Anime:
 
 
 async def search(query: str, limit: int = 20) -> list[dict]:
-    results = await jikan_search(query, limit)
+    results = await anime_search(query, limit)
     return [to_anime_fields(item) for item in results]

@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://api.deepseek.com/v1"
     llm_model: str = "deepseek-v4-pro"
 
+    anime_api_base_url: str = "https://api.tenrai.org/v1"
+    anime_api_fallback_url: str = "https://api.jikan.moe/v4"
+
     cors_origins: str = "http://localhost:5173"
 
     model_config = SettingsConfigDict(env_file=ROOT_DIR / ".env")

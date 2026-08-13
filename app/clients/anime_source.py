@@ -3,9 +3,9 @@ import time
 
 import httpx
 
+from app.config import settings
 from app.errors import UpstreamError
 
-BASE_URL = "https://api.jikan.moe/v4"
 TIMEOUT = httpx.Timeout(10.0)
 
 RETRY_STATUSES = {500, 502, 503, 504}
@@ -16,29 +16,29 @@ SEARCH_CACHE_TTL = 600  # 10 minutes
 _search_cache: dict[tuple[str, int], tuple[float, list[dict]]] = {}
 
 
-async def _get(path: str, params: dict | None = None) -> dict:
-    """GET from Jikan with retries on transient upstream failures."""
+async def _get_from(base_url: str, path: str, params: dict | None = None) -> dict:
+    """GET from one upstream with retries on transient failures."""
     last_error = "unknown error"
 
     async with httpx.AsyncClient(timeout=TIMEOUT) as client:
         for attempt in range(MAX_ATTEMPTS):
             try:
-                response = await client.get(f"{BASE_URL}{path}", params=params)
+                response = await client.get(f"{base_url}{path}", params=params)
             except httpx.RequestError as exc:
-                last_error = f"Jikan unreachable: {exc}"
+                last_error = f"{base_url} unreachable: {exc}"
             else:
                 if response.status_code < 400:
                     return response.json()
 
                 if response.status_code == 404:
-                    raise UpstreamError(f"Jikan has no record at {path}")
+                    raise UpstreamError(f"No record found at {path}")
                 if response.status_code == 429:
-                    last_error = "Jikan rate limit exceeded"
+                    last_error = "Upstream rate limit exceeded"
                 elif response.status_code in RETRY_STATUSES:
-                    last_error = f"Jikan returned {response.status_code}"
+                    last_error = f"Upstream returned {response.status_code}"
                 else:
                     raise UpstreamError(
-                        f"Jikan returned {response.status_code}: {response.text[:200]}"
+                        f"Upstream returned {response.status_code}: {response.text[:200]}"
                     )
 
             if attempt < MAX_ATTEMPTS - 1:
@@ -47,8 +47,21 @@ async def _get(path: str, params: dict | None = None) -> dict:
     raise UpstreamError(last_error)
 
 
-async def fetch_anime(jikan_id: int) -> dict:
-    payload = await _get(f"/anime/{jikan_id}")
+async def _get(path: str, params: dict | None = None) -> dict:
+    """Try the primary source; fall back to the secondary if it's unavailable."""
+    try:
+        return await _get_from(settings.anime_api_base_url, path, params)
+    except UpstreamError as primary_error:
+        if not settings.anime_api_fallback_url:
+            raise
+        try:
+            return await _get_from(settings.anime_api_fallback_url, path, params)
+        except UpstreamError:
+            raise primary_error from None
+
+
+async def fetch_anime(mal_id: int) -> dict:
+    payload = await _get(f"/anime/{mal_id}")
     return payload["data"]
 
 
