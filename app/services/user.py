@@ -23,19 +23,15 @@ async def create_user(session: AsyncSession, payload: UserCreate) -> User:
     session.add(user)
     try:
         await session.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         await session.rollback()
-        raise ConflictError("Username or email already taken")
+        raise ConflictError("Username or email already taken") from exc
     await session.refresh(user)
     return user
 
 
-async def authenticate_user(
-    session: AsyncSession, identifier: str, password: str
-) -> User | None:
-    stmt = select(User).where(
-        or_(User.email == identifier, User.username == identifier)
-    )
+async def authenticate_user(session: AsyncSession, identifier: str, password: str) -> User | None:
+    stmt = select(User).where(or_(User.email == identifier, User.username == identifier))
     result = await session.execute(stmt)
     user = result.scalar_one_or_none()
 

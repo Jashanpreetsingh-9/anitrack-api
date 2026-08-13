@@ -1,14 +1,16 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.anime import Anime
 from app.clients.jikan import fetch_anime, to_anime_fields
+from app.clients.jikan import search_anime as jikan_search
+from app.models.anime import Anime
 
 
-async def get_anime(session: AsyncSession, anime_id: int) -> Anime|None:
+async def get_anime(session: AsyncSession, anime_id: int) -> Anime | None:
     stmt = select(Anime).where(Anime.id == anime_id)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
+
 
 async def get_anime_by_jikan_id(session: AsyncSession, jikan_id: int) -> Anime | None:
     stmt = select(Anime).where(Anime.jikan_id == jikan_id)
@@ -29,3 +31,8 @@ async def import_anime(session: AsyncSession, jikan_id: int) -> Anime:
     await session.commit()
     await session.refresh(anime)
     return anime
+
+
+async def search(query: str, limit: int = 20) -> list[dict]:
+    results = await jikan_search(query, limit)
+    return [to_anime_fields(item) for item in results]

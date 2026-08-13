@@ -1,12 +1,26 @@
 from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
+
 
 class Settings(BaseSettings):
     database_url: str
     secret_key: str
     access_token_expire_minutes: int = 60 * 24 * 7
+
+    deepseek_api_key: str = ""
+    llm_base_url: str = "https://api.deepseek.com/v1"
+    llm_model: str = "deepseek-v4-pro"
+
+    cors_origins: str = "http://localhost:5173"
+
     model_config = SettingsConfigDict(env_file=ROOT_DIR / ".env")
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
 
 settings = Settings()

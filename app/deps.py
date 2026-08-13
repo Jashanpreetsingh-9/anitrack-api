@@ -13,7 +13,7 @@ from app.services.user import get_user_by_id
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
-async def get_session() -> AsyncGenerator[AsyncSession, None]:
+async def get_session() -> AsyncGenerator[AsyncSession]:
     async with SessionLocal() as session:
         yield session
 
