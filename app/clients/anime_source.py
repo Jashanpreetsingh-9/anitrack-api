@@ -82,6 +82,16 @@ async def search_anime(query: str, limit: int = 20) -> list[dict]:
     return results
 
 
+async def fetch_top_anime(page: int = 1) -> list[dict]:
+    payload = await _get("/top/anime", params={"page": page})
+    return payload["data"]
+
+
+async def fetch_season_now(page: int = 1) -> list[dict]:
+    payload = await _get("/seasons/now", params={"page": page})
+    return payload["data"]
+
+
 def to_anime_fields(data: dict) -> dict:
     return {
         "jikan_id": data["mal_id"],

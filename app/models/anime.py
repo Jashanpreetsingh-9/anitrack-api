@@ -1,13 +1,22 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, func
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import func
 
 from app.models.base import Base
 
 if TYPE_CHECKING:
+    from app.models.genre import Genre
     from app.models.watchlist import Watchlist
+
+anime_genres = Table(
+    "anime_genres",
+    Base.metadata,
+    Column("anime_id", ForeignKey("anime.id"), primary_key=True),
+    Column("genre_id", ForeignKey("genres.id"), primary_key=True),
+)
 
 
 class Anime(Base):
@@ -22,6 +31,13 @@ class Anime(Base):
     image_url: Mapped[str | None]
     episodes: Mapped[int | None]
     is_airing: Mapped[bool] = mapped_column(default=False)
+    score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    rank: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    popularity: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    season: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    genres: Mapped[list[Genre]] = relationship(secondary=anime_genres, back_populates="anime")
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

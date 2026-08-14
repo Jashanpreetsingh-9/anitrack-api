@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps import get_session
 from app.schemas.anime import AnimeCreate, AnimeOut, AnimeSearchResult
-from app.services.anime import get_anime, import_anime, search
+from app.services.anime import get_anime, get_explore, import_anime, search
 
 router = APIRouter(prefix="/anime", tags=["anime"])
 
@@ -13,6 +13,16 @@ router = APIRouter(prefix="/anime", tags=["anime"])
 @router.get("/search", response_model=list[AnimeSearchResult])
 async def search_anime(q: str, limit: int = 20):
     return await search(q, limit)
+
+
+@router.get("/explore", response_model=list[AnimeOut])
+async def explore_anime(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    genre: str | None = None,
+    season: str | None = None,
+    page: int = 1,
+):
+    return await get_explore(session, genre=genre, season=season, page=page)
 
 
 @router.get("/{anime_id}", response_model=AnimeOut)
