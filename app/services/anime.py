@@ -10,13 +10,13 @@ from app.models.genre import Genre
 
 
 async def get_anime(session: AsyncSession, anime_id: int) -> Anime | None:
-    stmt = select(Anime).where(Anime.id == anime_id)
+    stmt = select(Anime).where(Anime.id == anime_id).options(selectinload(Anime.genres))
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
 
 async def get_anime_by_jikan_id(session: AsyncSession, jikan_id: int) -> Anime | None:
-    stmt = select(Anime).where(Anime.jikan_id == jikan_id)
+    stmt = select(Anime).where(Anime.jikan_id == jikan_id).options(selectinload(Anime.genres))
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
