@@ -113,6 +113,7 @@ async def get_explore(
     session: AsyncSession,
     genre: str | None = None,
     season: str | None = None,
+    is_airing: bool | None = None,
     page: int = 1,
     page_size: int = 24,
 ) -> list[Anime]:
@@ -122,6 +123,8 @@ async def get_explore(
         query = query.join(Anime.genres).where(Genre.name == genre)
     if season:
         query = query.where(Anime.season == season)
+    if is_airing is not None:
+        query = query.where(Anime.is_airing == is_airing)
 
     query = query.order_by(Anime.rank.asc().nulls_last())
     query = query.offset((page - 1) * page_size).limit(page_size)

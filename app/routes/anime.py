@@ -20,9 +20,10 @@ async def explore_anime(
     session: Annotated[AsyncSession, Depends(get_session)],
     genre: str | None = None,
     season: str | None = None,
+    is_airing: bool | None = None,
     page: int = 1,
 ):
-    return await get_explore(session, genre=genre, season=season, page=page)
+    return await get_explore(session, genre=genre, season=season, is_airing=is_airing, page=page)
 
 
 @router.get("/{anime_id}", response_model=AnimeOut)
