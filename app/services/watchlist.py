@@ -13,7 +13,7 @@ async def list_entries(session: AsyncSession, user_id: int) -> list[Watchlist]:
     stmt = (
         select(Watchlist)
         .where(Watchlist.user_id == user_id)
-        .options(selectinload(Watchlist.anime))
+        .options(selectinload(Watchlist.anime).selectinload(Anime.genres))
         .order_by(Watchlist.updated_at.desc())
     )
     result = await session.execute(stmt)
@@ -24,7 +24,7 @@ async def get_entry(session: AsyncSession, entry_id: int, user_id: int) -> Watch
     stmt = (
         select(Watchlist)
         .where(Watchlist.id == entry_id, Watchlist.user_id == user_id)
-        .options(selectinload(Watchlist.anime))
+        .options(selectinload(Watchlist.anime).selectinload(Anime.genres))
     )
     result = await session.execute(stmt)
     entry = result.scalar_one_or_none()
@@ -51,6 +51,7 @@ async def add_entry(session: AsyncSession, user_id: int, payload: WatchlistCreat
         raise ConflictError("Already on your watchlist") from exc
 
     await session.refresh(entry, attribute_names=["anime"])
+    await session.refresh(entry.anime, attribute_names=["genres"])
     return entry
 
 
@@ -64,6 +65,7 @@ async def update_entry(
 
     await session.commit()
     await session.refresh(entry, attribute_names=["anime"])
+    await session.refresh(entry.anime, attribute_names=["genres"])
     return entry
 
 
