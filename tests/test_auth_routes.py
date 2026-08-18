@@ -1,5 +1,3 @@
-import pytest
-
 from app.config import settings
 from app.schemas.user import UserCreate
 from app.services.user import create_user
@@ -18,20 +16,6 @@ async def test_register_is_disabled(client):
     assert response.status_code == 403
     body = response.json()
     assert "Google or GitHub" in body["detail"]
-
-
-@pytest.mark.skip(reason="POST /auth/register is disabled; duplicate-check unreachable via HTTP")
-async def test_duplicate_username_returns_409(client):
-    payload = {
-        "name": "A",
-        "username": "dupe",
-        "email": "a@example.com",
-        "password": "password123",
-    }
-    await client.post("/auth/register", json=payload)
-    payload["email"] = "b@example.com"
-    response = await client.post("/auth/register", json=payload)
-    assert response.status_code == 409
 
 
 async def test_login_accepts_email_or_username(client, session):

@@ -2,8 +2,9 @@ import pytest
 
 from app.errors import ConflictError
 from app.models.user import User
+from app.schemas.user import UserCreate
 from app.security import hash_password
-from app.services.user import authenticate_user, find_or_create_oauth_user
+from app.services.user import authenticate_user, create_user, find_or_create_oauth_user
 
 
 async def _make_password_user(session, username: str) -> User:
@@ -55,6 +56,17 @@ async def test_generates_unique_username_on_collision(session):
     user = await find_or_create_oauth_user(session, "taken@other-domain.com", "Taken", "google")
 
     assert user.username != "taken"
+
+
+async def test_create_user_rejects_duplicate_username(session):
+    # POST /auth/register is disabled at the API layer, but create_user
+    # itself is kept intact for reference and must still reject duplicates.
+    payload = UserCreate(name="A", username="dupe", email="a@example.com", password="password123")
+    await create_user(session, payload)
+
+    duplicate = UserCreate(name="A", username="dupe", email="b@example.com", password="password123")
+    with pytest.raises(ConflictError):
+        await create_user(session, duplicate)
 
 
 async def test_password_login_rejected_cleanly_for_oauth_only_account(session):
