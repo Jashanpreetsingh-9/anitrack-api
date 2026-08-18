@@ -14,5 +14,5 @@ class Genre(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(50), unique=True)
-
+    category: Mapped[str] = mapped_column(String(20), default="genre")
     anime: Mapped[list[Anime]] = relationship(secondary="anime_genres", back_populates="genres")

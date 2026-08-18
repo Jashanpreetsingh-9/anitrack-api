@@ -101,4 +101,21 @@ def to_anime_fields(data: dict) -> dict:
         "episodes": data.get("episodes"),
         "is_airing": data.get("airing", False),
         "author": None,
+        "rating": data.get("rating"),
+        "duration": data.get("duration"),
+        "type": data.get("type"),
+        "trailer_youtube_id": data.get("trailer", {}).get("youtube_id"),
+        "trailer_embed_url": data.get("trailer", {}).get("embed_url"),
     }
+
+
+def extract_genre_names(data: dict) -> list[tuple[str, str]]:
+    """Returns (name, category) pairs for genres, themes, and demographics."""
+    pairs = []
+    for g in data.get("genres", []):
+        pairs.append((g["name"], "genre"))
+    for t in data.get("themes", []):
+        pairs.append((t["name"], "theme"))
+    for d in data.get("demographics", []):
+        pairs.append((d["name"], "demographic"))
+    return pairs

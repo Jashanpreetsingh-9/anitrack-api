@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class GenreOut(BaseModel):
     id: int
     name: str
+    category: str
 
     model_config = {"from_attributes": True}
 
@@ -22,6 +23,11 @@ class AnimeOut(BaseModel):
     popularity: int | None
     season: str | None
     year: int | None
+    rating: str | None
+    duration: str | None
+    type: str | None
+    trailer_youtube_id: str | None
+    trailer_embed_url: str | None
     genres: list[GenreOut]
 
     model_config = {"from_attributes": True}

@@ -36,6 +36,11 @@ class Anime(Base):
     popularity: Mapped[int | None] = mapped_column(Integer, nullable=True)
     season: Mapped[str | None] = mapped_column(String(10), nullable=True)
     year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    rating: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    duration: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    type: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    trailer_youtube_id: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    trailer_embed_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     genres: Mapped[list[Genre]] = relationship(secondary=anime_genres, back_populates="anime")
 

@@ -19,7 +19,32 @@ def test_maps_full_payload():
         "episodes": 28,
         "is_airing": False,
         "author": None,
+        "rating": None,
+        "duration": None,
+        "type": None,
+        "trailer_youtube_id": None,
+        "trailer_embed_url": None,
     }
+
+
+def test_maps_rating_duration_type_trailer():
+    raw = {
+        "mal_id": 52991,
+        "title": "Sousou no Frieren",
+        "images": {"jpg": {"large_image_url": "https://cdn/img.jpg"}},
+        "episodes": 28,
+        "airing": False,
+        "rating": "PG-13 - Teens 13 or older",
+        "duration": "24 min per ep",
+        "type": "TV",
+        "trailer": {"youtube_id": "abc123", "embed_url": "https://youtube.com/embed/abc123"},
+    }
+    fields = to_anime_fields(raw)
+    assert fields["rating"] == "PG-13 - Teens 13 or older"
+    assert fields["duration"] == "24 min per ep"
+    assert fields["type"] == "TV"
+    assert fields["trailer_youtube_id"] == "abc123"
+    assert fields["trailer_embed_url"] == "https://youtube.com/embed/abc123"
 
 
 def test_falls_back_to_romaji_when_no_english_title():

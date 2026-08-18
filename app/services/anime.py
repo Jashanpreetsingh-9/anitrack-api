@@ -3,7 +3,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.clients.anime_source import fetch_anime, to_anime_fields
+from app.clients.anime_source import extract_genre_names, fetch_anime, to_anime_fields
 from app.clients.anime_source import search_anime as anime_search
 from app.models.anime import Anime
 from app.models.genre import Genre
@@ -26,8 +26,14 @@ async def import_anime(session: AsyncSession, jikan_id: int) -> Anime:
     existing = await get_anime_by_jikan_id(session, jikan_id)
     if existing is not None:
         return existing
+
     data = await fetch_anime(jikan_id)
     anime = Anime(**to_anime_fields(data))
+
+    genre_pairs = extract_genre_names(data)
+    genres = await _get_or_create_genres(session, genre_pairs)
+    anime.genres = genres
+
     session.add(anime)
     await session.commit()
     return await get_anime_by_jikan_id(session, jikan_id)
@@ -38,31 +44,30 @@ async def search(query: str, limit: int = 20) -> list[dict]:
     return [to_anime_fields(item) for item in results]
 
 
-async def _get_or_create_genres(session: AsyncSession, genre_names: list[str]) -> list[Genre]:
-    if not genre_names:
+async def _get_or_create_genres(session: AsyncSession, pairs: list[tuple[str, str]]) -> list[Genre]:
+    if not pairs:
         return []
 
-    existing = await session.execute(select(Genre).where(Genre.name.in_(genre_names)))
+    names = [name for name, _ in pairs]
+    existing = await session.execute(select(Genre).where(Genre.name.in_(names)))
     existing_genres = {g.name: g for g in existing.scalars()}
 
     genres = []
-    for name in genre_names:
+    for name, category in pairs:
         if name in existing_genres:
             genres.append(existing_genres[name])
         else:
-            genre = Genre(name=name)
+            genre = Genre(name=name, category=category)
             session.add(genre)
             genres.append(genre)
 
-    await session.flush()  # assigns IDs to newly created genres before use
+    await session.flush()
     return genres
 
 
 async def upsert_anime(session: AsyncSession, raw: dict) -> Anime:
-    """Fetch-and-overwrite, for catalog syncing. Unlike import_anime, this
-    always refreshes score/rank/popularity even if the row already exists."""
     fields = to_anime_fields(raw)
-    genre_names = [g["name"] for g in raw.get("genres", [])]
+    genre_pairs = extract_genre_names(raw)
 
     stmt = (
         pg_insert(Anime)
@@ -78,6 +83,11 @@ async def upsert_anime(session: AsyncSession, raw: dict) -> Anime:
             popularity=raw.get("popularity"),
             season=raw.get("season"),
             year=raw.get("year"),
+            rating=fields["rating"],
+            duration=fields["duration"],
+            type=fields["type"],
+            trailer_youtube_id=fields["trailer_youtube_id"],
+            trailer_embed_url=fields["trailer_embed_url"],
         )
         .on_conflict_do_update(
             index_elements=["jikan_id"],
@@ -92,6 +102,11 @@ async def upsert_anime(session: AsyncSession, raw: dict) -> Anime:
                 "popularity": raw.get("popularity"),
                 "season": raw.get("season"),
                 "year": raw.get("year"),
+                "rating": fields["rating"],
+                "duration": fields["duration"],
+                "type": fields["type"],
+                "trailer_youtube_id": fields["trailer_youtube_id"],
+                "trailer_embed_url": fields["trailer_embed_url"],
             },
         )
         .returning(Anime)
@@ -99,7 +114,7 @@ async def upsert_anime(session: AsyncSession, raw: dict) -> Anime:
     result = await session.execute(stmt)
     anime = result.scalar_one()
 
-    genres = await _get_or_create_genres(session, genre_names)
+    genres = await _get_or_create_genres(session, genre_pairs)
 
     await session.refresh(anime, attribute_names=["genres"])
     anime.genres = genres
