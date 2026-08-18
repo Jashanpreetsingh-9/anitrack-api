@@ -38,6 +38,7 @@ jobs:
     env:
       DATABASE_URL: postgresql+asyncpg://anitrack:anitrack@localhost:5432/anitrack
       SECRET_KEY: ci-only-not-a-real-secret
+      INTERNAL_AUTH_SECRET: ci-only-not-a-real-secret
 
     steps:
       - uses: actions/checkout@v4
