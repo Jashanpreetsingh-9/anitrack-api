@@ -119,3 +119,11 @@ def extract_genre_names(data: dict) -> list[tuple[str, str]]:
     for d in data.get("demographics", []):
         pairs.append((d["name"], "demographic"))
     return pairs
+
+
+async def fetch_streaming(mal_id: int) -> list[dict]:
+    try:
+        payload = await _get(f"/anime/{mal_id}/streaming")
+    except UpstreamError:
+        return []  # no streaming data listed for this title — not a failure
+    return payload.get("data", [])

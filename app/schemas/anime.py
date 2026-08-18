@@ -9,6 +9,11 @@ class GenreOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class StreamingLinkOut(BaseModel):
+    name: str
+    url: str
+
+
 class AnimeOut(BaseModel):
     id: int
     jikan_id: int
@@ -28,6 +33,7 @@ class AnimeOut(BaseModel):
     type: str | None
     trailer_youtube_id: str | None
     trailer_embed_url: str | None
+    streaming_links: list[StreamingLinkOut] | None
     genres: list[GenreOut]
 
     model_config = {"from_attributes": True}

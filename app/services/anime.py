@@ -3,8 +3,15 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.clients.anime_source import extract_genre_names, fetch_anime, to_anime_fields
-from app.clients.anime_source import search_anime as anime_search
+from app.clients.anime_source import (
+    extract_genre_names,
+    fetch_anime,
+    fetch_streaming,
+    to_anime_fields,
+)
+from app.clients.anime_source import (
+    search_anime as anime_search,
+)
 from app.models.anime import Anime
 from app.models.genre import Genre
 
@@ -22,13 +29,13 @@ async def get_anime_by_jikan_id(session: AsyncSession, jikan_id: int) -> Anime |
 
 
 async def import_anime(session: AsyncSession, jikan_id: int) -> Anime:
-    """Return the local Anime for this Jikan ID, importing it if we don't have it."""
     existing = await get_anime_by_jikan_id(session, jikan_id)
     if existing is not None:
         return existing
 
     data = await fetch_anime(jikan_id)
-    anime = Anime(**to_anime_fields(data))
+    streaming = await fetch_streaming(jikan_id)
+    anime = Anime(**to_anime_fields(data), streaming_links=streaming)
 
     genre_pairs = extract_genre_names(data)
     genres = await _get_or_create_genres(session, genre_pairs)
@@ -68,6 +75,7 @@ async def _get_or_create_genres(session: AsyncSession, pairs: list[tuple[str, st
 async def upsert_anime(session: AsyncSession, raw: dict) -> Anime:
     fields = to_anime_fields(raw)
     genre_pairs = extract_genre_names(raw)
+    streaming = await fetch_streaming(fields["jikan_id"])
 
     stmt = (
         pg_insert(Anime)
@@ -88,6 +96,7 @@ async def upsert_anime(session: AsyncSession, raw: dict) -> Anime:
             type=fields["type"],
             trailer_youtube_id=fields["trailer_youtube_id"],
             trailer_embed_url=fields["trailer_embed_url"],
+            streaming_links=streaming,
         )
         .on_conflict_do_update(
             index_elements=["jikan_id"],
@@ -107,6 +116,7 @@ async def upsert_anime(session: AsyncSession, raw: dict) -> Anime:
                 "type": fields["type"],
                 "trailer_youtube_id": fields["trailer_youtube_id"],
                 "trailer_embed_url": fields["trailer_embed_url"],
+                "streaming_links": streaming,
             },
         )
         .returning(Anime)
