@@ -50,9 +50,7 @@ async def add_entry(session: AsyncSession, user_id: int, payload: WatchlistCreat
         await session.rollback()
         raise ConflictError("Already on your watchlist") from exc
 
-    await session.refresh(entry, attribute_names=["anime"])
-    await session.refresh(entry.anime, attribute_names=["genres"])
-    return entry
+    return await get_entry(session, entry.id, user_id)
 
 
 async def update_entry(
@@ -64,9 +62,7 @@ async def update_entry(
         setattr(entry, field, value)
 
     await session.commit()
-    await session.refresh(entry, attribute_names=["anime"])
-    await session.refresh(entry.anime, attribute_names=["genres"])
-    return entry
+    return await get_entry(session, entry_id, user_id)
 
 
 async def delete_entry(session: AsyncSession, entry_id: int, user_id: int) -> None:

@@ -5,7 +5,7 @@ from app.db import SessionLocal
 from app.services.anime import upsert_anime
 
 PAGES_TO_SEED = 5
-RATE_LIMIT_DELAY = 1.0
+RATE_LIMIT_DELAY = 2.0
 
 
 async def seed_top_anime():
