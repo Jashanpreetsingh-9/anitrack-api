@@ -8,6 +8,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 class Settings(BaseSettings):
     database_url: str
     secret_key: str
+    internal_auth_secret: str
     access_token_expire_minutes: int = 60 * 24 * 7
 
     debug: bool = False

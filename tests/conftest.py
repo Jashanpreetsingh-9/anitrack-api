@@ -9,6 +9,8 @@ from app.config import settings
 from app.deps import get_session
 from app.main import app
 from app.models.base import Base
+from app.schemas.user import UserCreate
+from app.services.user import create_user
 
 TEST_DATABASE_URL = settings.database_url.rsplit("/", 1)[0] + "/anitrack_test"
 
@@ -70,15 +72,17 @@ async def client(session):
 
 
 @pytest_asyncio.fixture
-async def auth_client(client):
-    await client.post(
-        "/auth/register",
-        json={
-            "name": "Test User",
-            "username": "tester",
-            "email": "tester@example.com",
-            "password": "hunter2hunter2",
-        },
+async def auth_client(client, session):
+    # Registration is disabled at the API layer; create the pre-existing
+    # password account directly via the service layer to test login.
+    await create_user(
+        session,
+        UserCreate(
+            name="Test User",
+            username="tester",
+            email="tester@example.com",
+            password="hunter2hunter2",
+        ),
     )
     response = await client.post(
         "/auth/login",

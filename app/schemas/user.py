@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, EmailStr
 
 
@@ -6,6 +8,12 @@ class UserCreate(BaseModel):
     username: str
     email: EmailStr
     password: str
+
+
+class OAuthLogin(BaseModel):
+    email: str
+    name: str
+    provider: Literal["google", "github"]
 
 
 class UserOut(BaseModel):
