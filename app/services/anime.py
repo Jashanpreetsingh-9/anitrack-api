@@ -30,8 +30,7 @@ async def import_anime(session: AsyncSession, jikan_id: int) -> Anime:
     anime = Anime(**to_anime_fields(data))
     session.add(anime)
     await session.commit()
-    await session.refresh(anime)
-    return anime
+    return await get_anime_by_jikan_id(session, jikan_id)
 
 
 async def search(query: str, limit: int = 20) -> list[dict]:
