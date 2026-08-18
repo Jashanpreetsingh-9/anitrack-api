@@ -64,14 +64,19 @@ async def find_or_create_oauth_user(
 
     if user is not None:
         if user.oauth_provider is None:
-            raise ConflictError("An account already exists with this email")
+            # Existing password-only account with a matching, provider-verified
+            # email — link this OAuth identity to it rather than rejecting.
+            # The password stays intact, so both login methods work afterward.
+            user.oauth_provider = provider
+            await session.commit()
+            await session.refresh(user)
+            return user
         if user.oauth_provider != provider:
             raise ConflictError(f"This email is already registered via {user.oauth_provider}")
         return user
 
     base_username = email.split("@")[0]
     username = await _unique_username_from(base_username, session)
-
     user = User(
         name=name,
         username=username,

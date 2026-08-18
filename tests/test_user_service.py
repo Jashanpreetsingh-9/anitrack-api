@@ -36,11 +36,16 @@ async def test_finds_existing_oauth_user_with_matching_provider(session):
     assert found.id == created.id
 
 
-async def test_rejects_oauth_login_for_existing_password_account(session):
-    await _make_password_user(session, "pwuser")
+async def test_links_oauth_to_existing_password_account(session):
+    existing = await _make_password_user(session, "pwuser")
 
-    with pytest.raises(ConflictError):
-        await find_or_create_oauth_user(session, "pwuser@example.com", "Pw User", "google")
+    linked = await find_or_create_oauth_user(
+        session, email=existing.email, name="New Name", provider="google"
+    )
+
+    assert linked.id == existing.id
+    assert linked.oauth_provider == "google"
+    assert linked.hashed_password is not None
 
 
 async def test_rejects_mismatched_oauth_provider(session):
