@@ -1,3 +1,4 @@
+import secrets
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
@@ -41,7 +42,9 @@ async def oauth_login(
     session: SessionDep,
     x_internal_auth_secret: Annotated[str | None, Header()] = None,
 ):
-    if x_internal_auth_secret != settings.internal_auth_secret:
+    if not x_internal_auth_secret or not secrets.compare_digest(
+        x_internal_auth_secret, settings.internal_auth_secret
+    ):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
     user = await find_or_create_oauth_user(session, payload.email, payload.name, payload.provider)

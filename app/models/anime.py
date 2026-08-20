@@ -24,7 +24,7 @@ class Anime(Base):
     __tablename__ = "anime"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    jikan_id: Mapped[int] = mapped_column(unique=True, index=True)
+    mal_id: Mapped[int] = mapped_column(unique=True, index=True)
 
     title: Mapped[str]
     synopsis: Mapped[str | None]

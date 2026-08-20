@@ -1,6 +1,7 @@
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.watchlist import WatchStatus
 from app.schemas.anime import AnimeOut
@@ -13,8 +14,8 @@ class WatchlistCreate(BaseModel):
 
 class WatchlistUpdate(BaseModel):
     status: WatchStatus | None = None
-    episodes_watched: int | None = None
-    score: int | None = None
+    episodes_watched: Annotated[int | None, Field(ge=0)] = None
+    score: Annotated[int | None, Field(ge=1, le=10)] = None
 
 
 class WatchlistOut(BaseModel):

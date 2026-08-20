@@ -59,7 +59,7 @@ jobs:
       - name: Check models match migrations
         run: uv run python -m alembic check
 
-      - run: uv run python -m pytest -q
+      - run: uv run python -m pytest -q --cov=app --cov-report=term-missing --cov-fail-under=60
 
   docker:
     runs-on: ubuntu-latest

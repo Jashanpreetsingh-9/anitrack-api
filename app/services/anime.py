@@ -22,19 +22,19 @@ async def get_anime(session: AsyncSession, anime_id: int) -> Anime | None:
     return result.scalar_one_or_none()
 
 
-async def get_anime_by_jikan_id(session: AsyncSession, jikan_id: int) -> Anime | None:
-    stmt = select(Anime).where(Anime.jikan_id == jikan_id).options(selectinload(Anime.genres))
+async def get_anime_by_mal_id(session: AsyncSession, mal_id: int) -> Anime | None:
+    stmt = select(Anime).where(Anime.mal_id == mal_id).options(selectinload(Anime.genres))
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
 
-async def import_anime(session: AsyncSession, jikan_id: int) -> Anime:
-    existing = await get_anime_by_jikan_id(session, jikan_id)
+async def import_anime(session: AsyncSession, mal_id: int) -> Anime:
+    existing = await get_anime_by_mal_id(session, mal_id)
     if existing is not None:
         return existing
 
-    data = await fetch_anime(jikan_id)
-    streaming = await fetch_streaming(jikan_id)
+    data = await fetch_anime(mal_id)
+    streaming = await fetch_streaming(mal_id)
     anime = Anime(**to_anime_fields(data), streaming_links=streaming)
 
     genre_pairs = extract_genre_names(data)
@@ -43,7 +43,7 @@ async def import_anime(session: AsyncSession, jikan_id: int) -> Anime:
 
     session.add(anime)
     await session.commit()
-    return await get_anime_by_jikan_id(session, jikan_id)
+    return await get_anime_by_mal_id(session, mal_id)
 
 
 async def search(query: str, limit: int = 20) -> list[dict]:
@@ -75,12 +75,12 @@ async def _get_or_create_genres(session: AsyncSession, pairs: list[tuple[str, st
 async def upsert_anime(session: AsyncSession, raw: dict) -> Anime:
     fields = to_anime_fields(raw)
     genre_pairs = extract_genre_names(raw)
-    streaming = await fetch_streaming(fields["jikan_id"])
+    streaming = await fetch_streaming(fields["mal_id"])
 
     stmt = (
         pg_insert(Anime)
         .values(
-            jikan_id=fields["jikan_id"],
+            mal_id=fields["mal_id"],
             title=fields["title"],
             synopsis=fields["synopsis"],
             image_url=fields["image_url"],
@@ -99,7 +99,7 @@ async def upsert_anime(session: AsyncSession, raw: dict) -> Anime:
             streaming_links=streaming,
         )
         .on_conflict_do_update(
-            index_elements=["jikan_id"],
+            index_elements=["mal_id"],
             set_={
                 "title": fields["title"],
                 "synopsis": fields["synopsis"],

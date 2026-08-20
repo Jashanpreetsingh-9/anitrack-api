@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Request
@@ -15,6 +16,7 @@ from app.routes.recommendations import router as recommendations_router
 from app.routes.watchlist import router as watchlist_router
 
 app = FastAPI(title="AniTrack API")
+logger = logging.getLogger(__name__)
 
 
 @app.exception_handler(NotFoundError)
@@ -30,6 +32,12 @@ async def upstream_handler(request: Request, exc: UpstreamError):
 @app.exception_handler(ConflictError)
 async def conflict_handler(request: Request, exc: ConflictError):
     return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+
+@app.exception_handler(Exception)
+async def unhandled_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled error on %s", request.url.path)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 @app.get("/health")

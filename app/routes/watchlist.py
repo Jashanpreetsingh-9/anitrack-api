@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status
 
-from app.deps import CurrentUser, SessionDep
+from app.deps import CurrentUser, CurrentUserId, SessionDep
 from app.schemas.watchlist import WatchlistCreate, WatchlistOut, WatchlistUpdate
 from app.services.watchlist import (
     add_entry,
@@ -13,8 +13,8 @@ router = APIRouter(prefix="/watchlist", tags=["watchlist"])
 
 
 @router.get("", response_model=list[WatchlistOut])
-async def read_watchlist(user: CurrentUser, session: SessionDep):
-    return await list_entries(session, user.id)
+async def read_watchlist(user_id: CurrentUserId, session: SessionDep):
+    return await list_entries(session, user_id)
 
 
 @router.post("", response_model=WatchlistOut, status_code=201)

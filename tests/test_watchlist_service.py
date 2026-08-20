@@ -22,7 +22,7 @@ async def _make_user(session, username: str) -> User:
 
 
 async def _make_anime(session, mal_id: int) -> Anime:
-    anime = Anime(jikan_id=mal_id, title=f"Show {mal_id}")
+    anime = Anime(mal_id=mal_id, title=f"Show {mal_id}")
     session.add(anime)
     await session.commit()
     return anime

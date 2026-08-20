@@ -1,6 +1,7 @@
 from app.clients.llm import complete, parse_json_response
 from app.errors import UpstreamError
 from app.models.user import User
+from app.schemas.recommendations import RecommendationItem
 from app.services.watchlist import list_entries
 
 SYSTEM_PROMPT = """You are an anime recommendation engine.
@@ -31,8 +32,17 @@ async def generate_for_user(session, user: User, limit: int = 5) -> list[dict]:
         raise UpstreamError("LLM returned an unexpected shape")
 
     seen = {entry.anime.title.lower() for entry in entries}
-    return [
-        item
-        for item in parsed
-        if isinstance(item, dict) and "title" in item and item["title"].lower() not in seen
-    ][:limit]
+    results: list[dict] = []
+    for item in parsed:
+        if not isinstance(item, dict):
+            continue
+        try:
+            rec = RecommendationItem.model_validate(item)
+        except Exception:
+            continue
+        if rec.title.lower() in seen:
+            continue
+        results.append(rec.model_dump())
+        if len(results) >= limit:
+            break
+    return results

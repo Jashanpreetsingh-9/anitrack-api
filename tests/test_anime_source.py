@@ -12,7 +12,7 @@ def test_maps_full_payload():
         "airing": False,
     }
     assert to_anime_fields(raw) == {
-        "jikan_id": 52991,
+        "mal_id": 52991,
         "title": "Frieren: Beyond Journey's End",
         "synopsis": "An elf mage...",
         "image_url": "https://cdn/img.jpg",

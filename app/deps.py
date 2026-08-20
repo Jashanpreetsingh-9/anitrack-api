@@ -43,3 +43,21 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+async def get_current_user_id(
+    token: Annotated[str, Depends(oauth2_scheme)],
+) -> int:
+    """JWT-only auth — no DB lookup. For read endpoints where is_active staleness is OK."""
+    credentials_error = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    user_id = decode_access_token(token)
+    if user_id is None:
+        raise credentials_error
+    return user_id
+
+
+CurrentUserId = Annotated[int, Depends(get_current_user_id)]

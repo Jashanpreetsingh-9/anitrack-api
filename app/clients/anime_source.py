@@ -13,7 +13,15 @@ MAX_ATTEMPTS = 3
 BACKOFF_SECONDS = 1.0
 
 SEARCH_CACHE_TTL = 600  # 10 minutes
+SEARCH_CACHE_MAX_SIZE = 256
 _search_cache: dict[tuple[str, int], tuple[float, list[dict]]] = {}
+
+
+def _cache_set(key: tuple[str, int], results: list[dict]) -> None:
+    if len(_search_cache) >= SEARCH_CACHE_MAX_SIZE:
+        oldest_key = min(_search_cache, key=lambda k: _search_cache[k][0])
+        del _search_cache[oldest_key]
+    _search_cache[key] = (time.monotonic(), results)
 
 
 async def _get_from(base_url: str, path: str, params: dict | None = None) -> dict:
@@ -78,7 +86,7 @@ async def search_anime(query: str, limit: int = 20) -> list[dict]:
     payload = await _get("/anime", params={"q": query, "limit": limit})
     results = payload["data"]
 
-    _search_cache[key] = (time.monotonic(), results)
+    _cache_set(key, results)
     return results
 
 
@@ -94,7 +102,7 @@ async def fetch_season_now(page: int = 1) -> list[dict]:
 
 def to_anime_fields(data: dict) -> dict:
     return {
-        "jikan_id": data["mal_id"],
+        "mal_id": data["mal_id"],
         "title": data.get("title_english") or data["title"],
         "synopsis": data.get("synopsis"),
         "image_url": data.get("images", {}).get("jpg", {}).get("large_image_url"),

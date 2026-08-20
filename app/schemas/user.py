@@ -11,7 +11,7 @@ class UserCreate(BaseModel):
 
 
 class OAuthLogin(BaseModel):
-    email: str
+    email: EmailStr
     name: str
     provider: Literal["google", "github"]
 

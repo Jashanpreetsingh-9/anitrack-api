@@ -16,7 +16,7 @@ class StreamingLinkOut(BaseModel):
 
 class AnimeOut(BaseModel):
     id: int
-    jikan_id: int
+    mal_id: int
     title: str
     synopsis: str | None
     image_url: str | None
@@ -40,11 +40,11 @@ class AnimeOut(BaseModel):
 
 
 class AnimeCreate(BaseModel):
-    jikan_id: int
+    mal_id: int
 
 
 class AnimeSearchResult(BaseModel):
-    jikan_id: int
+    mal_id: int
     title: str
     synopsis: str | None
     image_url: str | None

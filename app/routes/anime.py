@@ -1,17 +1,17 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import get_session
+from app.deps import CurrentUser, get_session
 from app.schemas.anime import AnimeCreate, AnimeOut, AnimeSearchResult
-from app.services.anime import get_anime, get_explore, import_anime, search
+from app.services.anime import get_anime, get_anime_by_mal_id, get_explore, import_anime, search
 
 router = APIRouter(prefix="/anime", tags=["anime"])
 
 
 @router.get("/search", response_model=list[AnimeSearchResult])
-async def search_anime(q: str, limit: int = 20):
+async def search_anime(q: str, limit: Annotated[int, Query(le=25)] = 20):
     return await search(q, limit)
 
 
@@ -21,9 +21,20 @@ async def explore_anime(
     genre: str | None = None,
     season: str | None = None,
     is_airing: bool | None = None,
-    page: int = 1,
+    page: Annotated[int, Query(ge=1, le=100)] = 1,
 ):
     return await get_explore(session, genre=genre, season=season, is_airing=is_airing, page=page)
+
+
+@router.get("/mal/{mal_id}", response_model=AnimeOut)
+async def read_anime_by_mal_id(
+    mal_id: int,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    anime = await get_anime_by_mal_id(session, mal_id)
+    if anime is None:
+        anime = await import_anime(session, mal_id)
+    return anime
 
 
 @router.get("/{anime_id}", response_model=AnimeOut)
@@ -37,6 +48,7 @@ async def read_anime(anime_id: int, session: Annotated[AsyncSession, Depends(get
 @router.post("", response_model=AnimeOut, status_code=201)
 async def create_anime(
     payload: AnimeCreate,
+    _user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    return await import_anime(session, payload.jikan_id)
+    return await import_anime(session, payload.mal_id)
