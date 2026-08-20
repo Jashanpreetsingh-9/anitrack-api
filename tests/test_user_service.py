@@ -49,13 +49,9 @@ async def test_links_oauth_to_existing_password_account(session):
 
 
 async def test_allows_second_oauth_provider_for_same_email(session):
-    created = await find_or_create_oauth_user(
-        session, "switcher@example.com", "Switcher", "google"
-    )
+    created = await find_or_create_oauth_user(session, "switcher@example.com", "Switcher", "google")
 
-    found = await find_or_create_oauth_user(
-        session, "switcher@example.com", "Switcher", "github"
-    )
+    found = await find_or_create_oauth_user(session, "switcher@example.com", "Switcher", "github")
 
     assert found.id == created.id
     assert found.oauth_provider == "google"
