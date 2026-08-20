@@ -1,13 +1,18 @@
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserCreate(BaseModel):
     name: str
     username: str
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8)
+
+
+class ProfileSetup(BaseModel):
+    username: str = Field(min_length=3, max_length=30, pattern=r"^[a-zA-Z0-9_]+$")
+    password: str = Field(min_length=8)
 
 
 class OAuthLogin(BaseModel):
@@ -23,6 +28,7 @@ class UserOut(BaseModel):
     name: str
     username: str
     email: EmailStr
+    profile_complete: bool
 
 
 class Token(BaseModel):

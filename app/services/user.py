@@ -8,6 +8,10 @@ from app.schemas.user import UserCreate
 from app.security import hash_password, verify_password
 
 
+def user_needs_onboarding(user: User) -> bool:
+    return not user.profile_complete
+
+
 async def get_user_by_id(session: AsyncSession, user_id: int) -> User | None:
     result = await session.execute(select(User).where(User.id == user_id))
     return result.scalar_one_or_none()
@@ -19,6 +23,7 @@ async def create_user(session: AsyncSession, payload: UserCreate) -> User:
         username=payload.username,
         email=payload.email,
         hashed_password=hash_password(payload.password),
+        profile_complete=True,
     )
     session.add(user)
     try:
@@ -35,7 +40,7 @@ async def authenticate_user(session: AsyncSession, identifier: str, password: st
     result = await session.execute(stmt)
     user = result.scalar_one_or_none()
 
-    if user is None or user.hashed_password is None:
+    if user is None or user.hashed_password is None or not user.profile_complete:
         return None
     if not verify_password(password, user.hashed_password):
         return None
@@ -83,6 +88,7 @@ async def find_or_create_oauth_user(
         email=email,
         hashed_password=None,
         oauth_provider=provider,
+        profile_complete=False,
     )
     session.add(user)
     try:
@@ -90,5 +96,31 @@ async def find_or_create_oauth_user(
     except IntegrityError as exc:
         await session.rollback()
         raise ConflictError("Username or email already taken") from exc
+    await session.refresh(user)
+    return user
+
+
+async def complete_profile(
+    session: AsyncSession, user_id: int, username: str, password: str
+) -> User:
+    user = await get_user_by_id(session, user_id)
+    if user is None:
+        raise ConflictError("User not found")
+    if user.profile_complete:
+        raise ConflictError("Profile is already complete")
+
+    existing = await session.execute(select(User.id).where(User.username == username))
+    taken_id = existing.scalar_one_or_none()
+    if taken_id is not None and taken_id != user.id:
+        raise ConflictError("Username already taken")
+
+    user.username = username
+    user.hashed_password = hash_password(password)
+    user.profile_complete = True
+    try:
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise ConflictError("Username already taken") from exc
     await session.refresh(user)
     return user

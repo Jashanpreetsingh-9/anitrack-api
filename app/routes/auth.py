@@ -6,9 +6,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from app.config import settings
 from app.deps import CurrentUser, SessionDep
-from app.schemas.user import OAuthLogin, Token, UserCreate, UserOut
+from app.schemas.user import OAuthLogin, ProfileSetup, Token, UserCreate, UserOut
 from app.security import create_access_token
-from app.services.user import authenticate_user, find_or_create_oauth_user
+from app.services.user import authenticate_user, complete_profile, find_or_create_oauth_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -54,3 +54,8 @@ async def oauth_login(
 @router.get("/me", response_model=UserOut)
 async def read_me(user: CurrentUser):
     return user
+
+
+@router.post("/onboarding", response_model=UserOut)
+async def finish_onboarding(payload: ProfileSetup, user: CurrentUser, session: SessionDep):
+    return await complete_profile(session, user.id, payload.username, payload.password)
