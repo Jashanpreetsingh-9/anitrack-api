@@ -55,11 +55,13 @@ async def test_links_oauth_to_existing_password_account(session):
     assert linked.hashed_password is not None
 
 
-async def test_rejects_mismatched_oauth_provider(session):
-    await find_or_create_oauth_user(session, "switcher@example.com", "Switcher", "github")
+async def test_allows_second_oauth_provider_for_same_email(session):
+    created = await find_or_create_oauth_user(session, "switcher@example.com", "Switcher", "google")
 
-    with pytest.raises(ConflictError):
-        await find_or_create_oauth_user(session, "switcher@example.com", "Switcher", "google")
+    found = await find_or_create_oauth_user(session, "switcher@example.com", "Switcher", "github")
+
+    assert found.id == created.id
+    assert found.oauth_provider == "google"
 
 
 async def test_generates_unique_username_on_collision(session):
