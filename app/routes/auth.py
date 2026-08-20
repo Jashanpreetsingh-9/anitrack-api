@@ -8,7 +8,12 @@ from app.config import settings
 from app.deps import CurrentUser, SessionDep
 from app.schemas.user import OAuthLogin, ProfileSetup, Token, UserCreate, UserOut
 from app.security import create_access_token
-from app.services.user import authenticate_user, complete_profile, find_or_create_oauth_user
+from app.services.user import (
+    authenticate_user,
+    complete_profile,
+    login_oauth_user,
+    register_oauth_user,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -47,7 +52,10 @@ async def oauth_login(
     ):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
-    user = await find_or_create_oauth_user(session, payload.email, payload.name, payload.provider)
+    if payload.intent == "register":
+        user = await register_oauth_user(session, payload.email, payload.name, payload.provider)
+    else:
+        user = await login_oauth_user(session, payload.email, payload.provider)
     return Token(access_token=create_access_token(user.id))
 
 

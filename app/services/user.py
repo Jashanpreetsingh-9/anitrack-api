@@ -2,7 +2,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.errors import ConflictError
+from app.errors import ConflictError, NotFoundError
 from app.models.user import User
 from app.schemas.user import UserCreate
 from app.security import hash_password, verify_password
@@ -60,24 +60,14 @@ async def _unique_username_from(base: str, session: AsyncSession) -> str:
         candidate = f"{base}{suffix}"
 
 
-async def find_or_create_oauth_user(
-    session: AsyncSession, email: str, name: str, provider: str
-) -> User:
-    stmt = select(User).where(User.email == email)
-    result = await session.execute(stmt)
-    user = result.scalar_one_or_none()
+async def _get_user_by_email(session: AsyncSession, email: str) -> User | None:
+    result = await session.execute(select(User).where(User.email == email))
+    return result.scalar_one_or_none()
 
-    if user is not None:
-        if user.oauth_provider is None:
-            # Existing password-only account with a matching, provider-verified
-            # email — link this OAuth identity to it rather than rejecting.
-            # The password stays intact, so both login methods work afterward.
-            user.oauth_provider = provider
-            await session.commit()
-            await session.refresh(user)
-            return user
-        # Google and GitHub both verify email. Same address = same account.
-        return user
+
+async def register_oauth_user(session: AsyncSession, email: str, name: str, provider: str) -> User:
+    if await _get_user_by_email(session, email) is not None:
+        raise ConflictError("An account already exists for this email. Log in instead.")
 
     base_username = email.split("@")[0]
     username = await _unique_username_from(base_username, session)
@@ -96,6 +86,20 @@ async def find_or_create_oauth_user(
         await session.rollback()
         raise ConflictError("Username or email already taken") from exc
     await session.refresh(user)
+    return user
+
+
+async def login_oauth_user(session: AsyncSession, email: str, provider: str) -> User:
+    user = await _get_user_by_email(session, email)
+    if user is None:
+        raise NotFoundError("No account for this email. Create an account first.")
+
+    if user.oauth_provider is None:
+        user.oauth_provider = provider
+        await session.commit()
+        await session.refresh(user)
+        return user
+
     return user
 
 

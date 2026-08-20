@@ -19,6 +19,7 @@ class OAuthLogin(BaseModel):
     email: EmailStr
     name: str
     provider: Literal["google", "github"]
+    intent: Literal["login", "register"]
 
 
 class UserOut(BaseModel):
