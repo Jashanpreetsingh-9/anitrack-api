@@ -1,8 +1,14 @@
 import asyncio
+import sys
+from pathlib import Path
 
-from app.clients.anime_source import fetch_season_now, fetch_top_anime
-from app.db import SessionLocal
-from app.services.anime import upsert_anime
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from app.clients.anime_source import fetch_season_now, fetch_top_anime  # noqa: E402
+from app.db import SessionLocal  # noqa: E402
+from app.services.anime import upsert_anime  # noqa: E402
 
 PAGES_TO_SEED = 5
 RATE_LIMIT_DELAY = 2.0

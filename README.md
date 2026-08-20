@@ -136,6 +136,27 @@ button to log in and exercise protected endpoints.
 Commands use `python -m` rather than the console scripts: Windows Smart App
 Control blocks the unsigned shims uv generates in `.venv/Scripts`.
 
+### Catalog sync (Tenrai → Neon)
+
+Explore reads **only Neon**. Tenrai is not queried on page load. To fill or
+refresh the catalog (top-rated + currently airing), run:
+
+```bash
+uv run python scripts/seed.py
+```
+
+That upserts by `mal_id`, so re-running updates scores, rank, and `is_airing`.
+It is slow on purpose (rate-limit delay + a streaming lookup per title).
+
+Production refresh is a daily GitHub Action (`.github/workflows/sync-catalog.yml`)
+plus **Actions → Sync catalog → Run workflow**. Add these repository secrets:
+
+- `DATABASE_URL` — same Neon URL the API uses (`postgresql+asyncpg://…`)
+- `SECRET_KEY` and `INTERNAL_AUTH_SECRET` — required to boot app settings
+
+Do **not** fetch Tenrai from the explore page. That would make `/explore`
+slow, flaky, and coupled to Tenrai uptime.
+
 ### Environment
 
 | Variable                      | Notes                                                                                                                           |
