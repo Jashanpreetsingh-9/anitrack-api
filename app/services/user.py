@@ -76,8 +76,8 @@ async def find_or_create_oauth_user(
             await session.commit()
             await session.refresh(user)
             return user
-        if user.oauth_provider != provider:
-            raise ConflictError(f"This email is already registered via {user.oauth_provider}")
+        # Google and GitHub both verify email. Same address = same account,
+        # so GitHub login must succeed even if the user first signed up with Google.
         return user
 
     base_username = email.split("@")[0]
